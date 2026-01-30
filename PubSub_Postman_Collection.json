@@ -1,0 +1,682 @@
+{
+  "info": {
+    "name": "Pub/Sub System - Complete Test Suite",
+    "description": "Comprehensive Postman collection for testing the In-Memory Pub/Sub System.\n\nIncludes:\n- All REST API endpoints\n- WebSocket test examples\n- Error scenarios\n- Edge cases\n\nBase URL: http://localhost:8080",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "wsUrl",
+      "value": "ws://localhost:8080/ws",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Health & Observability",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Check system health, uptime, topic count, and subscriber count."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["stats"]
+            },
+            "description": "Get per-topic statistics including message counts and subscriber counts."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints for monitoring system health and statistics."
+    },
+    {
+      "name": "2. Topic Management",
+      "item": [
+        {
+          "name": "Create Topic - orders",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"orders\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/topics",
+              "host": ["{{baseUrl}}"],
+              "path": ["topics"]
+            },
+            "description": "Create a new topic named 'orders'. Returns 201 on success, 409 if already exists."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Topic - notifications",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"notifications\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/topics",
+              "host": ["{{baseUrl}}"],
+              "path": ["topics"]
+            },
+            "description": "Create a new topic named 'notifications'."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Topic - events",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"events\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/topics",
+              "host": ["{{baseUrl}}"],
+              "path": ["topics"]
+            },
+            "description": "Create a new topic named 'events'."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Topic - demo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"demo\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/topics",
+              "host": ["{{baseUrl}}"],
+              "path": ["topics"]
+            },
+            "description": "Create a topic for demo/testing purposes."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Duplicate Topic (Error Test)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"orders\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/topics",
+              "host": ["{{baseUrl}}"],
+              "path": ["topics"]
+            },
+            "description": "Try to create duplicate topic. Should return 409 Conflict."
+          },
+          "response": []
+        },
+        {
+          "name": "List All Topics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/topics",
+              "host": ["{{baseUrl}}"],
+              "path": ["topics"]
+            },
+            "description": "Get list of all topics with subscriber counts."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Topic - demo",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/topics/demo",
+              "host": ["{{baseUrl}}"],
+              "path": ["topics", "demo"]
+            },
+            "description": "Delete the 'demo' topic. Subscribers will receive topic_deleted notification."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Non-Existent Topic (Error Test)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/topics/non-existent-topic",
+              "host": ["{{baseUrl}}"],
+              "path": ["topics", "non-existent-topic"]
+            },
+            "description": "Try to delete non-existent topic. Should return 404 Not Found."
+          },
+          "response": []
+        }
+      ],
+      "description": "REST API endpoints for creating, listing, and deleting topics."
+    },
+    {
+      "name": "3. WebSocket Tests (Use WebSocket Client)",
+      "item": [
+        {
+          "name": "WebSocket Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            },
+            "description": "WebSocket endpoint is at: ws://localhost:8080/ws\n\nPostman has limited WebSocket support. For full testing, use:\n1. Postman WebSocket feature (New → WebSocket Request)\n2. Python test scripts (test_pubsub.py or example_client.py)\n3. wscat CLI tool: npm install -g wscat\n\nSee the 'WebSocket Examples' folder for message formats."
+          },
+          "response": []
+        }
+      ],
+      "description": "WebSocket testing information. Use the examples below in a WebSocket client."
+    },
+    {
+      "name": "4. WebSocket Examples",
+      "item": [
+        {
+          "name": "Subscribe - Basic",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            },
+            "description": "Connect to: ws://localhost:8080/ws\n\nSend this JSON:\n```json\n{\n  \"type\": \"subscribe\",\n  \"topic\": \"orders\",\n  \"client_id\": \"subscriber-1\"\n}\n```\n\nExpected Response:\n```json\n{\n  \"type\": \"ack\",\n  \"topic\": \"orders\",\n  \"status\": \"ok\",\n  \"ts\": \"2025-01-30T10:00:00Z\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Subscribe - With Replay (last_n)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            },
+            "description": "Connect to: ws://localhost:8080/ws\n\nSend this JSON:\n```json\n{\n  \"type\": \"subscribe\",\n  \"topic\": \"orders\",\n  \"client_id\": \"subscriber-2\",\n  \"last_n\": 5,\n  \"request_id\": \"req-123\"\n}\n```\n\nThis will:\n1. Subscribe to 'orders' topic\n2. Receive last 5 historical messages\n3. Receive future messages\n\nExpected Response:\n1. Acknowledgment\n2. Up to 5 historical event messages\n3. Future events as they're published"
+          },
+          "response": []
+        },
+        {
+          "name": "Publish - Single Message",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            },
+            "description": "Connect to: ws://localhost:8080/ws\n\nSend this JSON:\n```json\n{\n  \"type\": \"publish\",\n  \"topic\": \"orders\",\n  \"message\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"payload\": {\n      \"order_id\": \"ORD-123\",\n      \"amount\": 99.5,\n      \"currency\": \"USD\",\n      \"timestamp\": \"2025-01-30T10:00:00Z\"\n    }\n  },\n  \"request_id\": \"pub-001\"\n}\n```\n\nExpected Response:\n```json\n{\n  \"type\": \"ack\",\n  \"request_id\": \"pub-001\",\n  \"topic\": \"orders\",\n  \"status\": \"ok\",\n  \"ts\": \"2025-01-30T10:00:00Z\"\n}\n```\n\nAll subscribers to 'orders' will receive:\n```json\n{\n  \"type\": \"event\",\n  \"topic\": \"orders\",\n  \"message\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"payload\": {...}\n  },\n  \"ts\": \"2025-01-30T10:00:00Z\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Publish - Complex Payload",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            },
+            "description": "Connect to: ws://localhost:8080/ws\n\nSend this JSON:\n```json\n{\n  \"type\": \"publish\",\n  \"topic\": \"orders\",\n  \"message\": {\n    \"id\": \"650e8400-e29b-41d4-a716-446655440001\",\n    \"payload\": {\n      \"order_id\": \"ORD-456\",\n      \"customer\": {\n        \"id\": \"CUST-789\",\n        \"name\": \"John Doe\",\n        \"email\": \"john@example.com\"\n      },\n      \"items\": [\n        {\"product_id\": \"P1\", \"quantity\": 2, \"price\": 25.50},\n        {\"product_id\": \"P2\", \"quantity\": 1, \"price\": 48.50}\n      ],\n      \"total\": 99.50,\n      \"status\": \"pending\",\n      \"metadata\": {\n        \"source\": \"mobile_app\",\n        \"version\": \"2.1.0\"\n      }\n    }\n  },\n  \"request_id\": \"pub-002\"\n}\n```\n\nThe payload can be any valid JSON structure."
+          },
+          "response": []
+        },
+        {
+          "name": "Unsubscribe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            },
+            "description": "Connect to: ws://localhost:8080/ws\n\nSend this JSON:\n```json\n{\n  \"type\": \"unsubscribe\",\n  \"topic\": \"orders\",\n  \"client_id\": \"subscriber-1\",\n  \"request_id\": \"unsub-001\"\n}\n```\n\nExpected Response:\n```json\n{\n  \"type\": \"ack\",\n  \"request_id\": \"unsub-001\",\n  \"topic\": \"orders\",\n  \"status\": \"ok\",\n  \"ts\": \"2025-01-30T10:00:00Z\"\n}\n```\n\nAfter unsubscribing, the client will no longer receive events from this topic."
+          },
+          "response": []
+        },
+        {
+          "name": "Ping",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            },
+            "description": "Connect to: ws://localhost:8080/ws\n\nSend this JSON:\n```json\n{\n  \"type\": \"ping\",\n  \"request_id\": \"ping-001\"\n}\n```\n\nExpected Response:\n```json\n{\n  \"type\": \"pong\",\n  \"request_id\": \"ping-001\",\n  \"ts\": \"2025-01-30T10:00:00Z\"\n}\n```\n\nUse this to check WebSocket connection health."
+          },
+          "response": []
+        }
+      ],
+      "description": "Example WebSocket messages. Copy these to a WebSocket client to test."
+    },
+    {
+      "name": "5. WebSocket Error Scenarios",
+      "item": [
+        {
+          "name": "Subscribe to Non-Existent Topic",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            },
+            "description": "Connect to: ws://localhost:8080/ws\n\nSend this JSON:\n```json\n{\n  \"type\": \"subscribe\",\n  \"topic\": \"non-existent-topic\",\n  \"client_id\": \"test-client\",\n  \"request_id\": \"err-001\"\n}\n```\n\nExpected Error Response:\n```json\n{\n  \"type\": \"error\",\n  \"request_id\": \"err-001\",\n  \"error\": {\n    \"code\": \"TOPIC_NOT_FOUND\",\n    \"message\": \"Topic 'non-existent-topic' does not exist\"\n  },\n  \"ts\": \"2025-01-30T10:00:00Z\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Subscribe Without client_id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            },
+            "description": "Connect to: ws://localhost:8080/ws\n\nSend this JSON (missing client_id):\n```json\n{\n  \"type\": \"subscribe\",\n  \"topic\": \"orders\",\n  \"request_id\": \"err-002\"\n}\n```\n\nExpected Error Response:\n```json\n{\n  \"type\": \"error\",\n  \"request_id\": \"err-002\",\n  \"error\": {\n    \"code\": \"BAD_REQUEST\",\n    \"message\": \"client_id is required\"\n  },\n  \"ts\": \"2025-01-30T10:00:00Z\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Subscribe Without topic",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            },
+            "description": "Connect to: ws://localhost:8080/ws\n\nSend this JSON (missing topic):\n```json\n{\n  \"type\": \"subscribe\",\n  \"client_id\": \"test-client\",\n  \"request_id\": \"err-003\"\n}\n```\n\nExpected Error Response:\n```json\n{\n  \"type\": \"error\",\n  \"request_id\": \"err-003\",\n  \"error\": {\n    \"code\": \"BAD_REQUEST\",\n    \"message\": \"topic is required\"\n  },\n  \"ts\": \"2025-01-30T10:00:00Z\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Publish With Invalid UUID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            },
+            "description": "Connect to: ws://localhost:8080/ws\n\nSend this JSON (invalid UUID):\n```json\n{\n  \"type\": \"publish\",\n  \"topic\": \"orders\",\n  \"message\": {\n    \"id\": \"not-a-valid-uuid\",\n    \"payload\": {\"test\": \"data\"}\n  },\n  \"request_id\": \"err-004\"\n}\n```\n\nExpected Error Response:\n```json\n{\n  \"type\": \"error\",\n  \"request_id\": \"err-004\",\n  \"error\": {\n    \"code\": \"BAD_REQUEST\",\n    \"message\": \"message.id must be a valid UUID\"\n  },\n  \"ts\": \"2025-01-30T10:00:00Z\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Publish Without message",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            },
+            "description": "Connect to: ws://localhost:8080/ws\n\nSend this JSON (missing message):\n```json\n{\n  \"type\": \"publish\",\n  \"topic\": \"orders\",\n  \"request_id\": \"err-005\"\n}\n```\n\nExpected Error Response:\n```json\n{\n  \"type\": \"error\",\n  \"request_id\": \"err-005\",\n  \"error\": {\n    \"code\": \"BAD_REQUEST\",\n    \"message\": \"message is required\"\n  },\n  \"ts\": \"2025-01-30T10:00:00Z\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Publish to Non-Existent Topic",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            },
+            "description": "Connect to: ws://localhost:8080/ws\n\nSend this JSON:\n```json\n{\n  \"type\": \"publish\",\n  \"topic\": \"non-existent-topic\",\n  \"message\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"payload\": {\"test\": \"data\"}\n  },\n  \"request_id\": \"err-006\"\n}\n```\n\nExpected Error Response:\n```json\n{\n  \"type\": \"error\",\n  \"request_id\": \"err-006\",\n  \"error\": {\n    \"code\": \"TOPIC_NOT_FOUND\",\n    \"message\": \"Topic 'non-existent-topic' does not exist\"\n  },\n  \"ts\": \"2025-01-30T10:00:00Z\"\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid Message Type",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            },
+            "description": "Connect to: ws://localhost:8080/ws\n\nSend this JSON (invalid type):\n```json\n{\n  \"type\": \"invalid_type\",\n  \"topic\": \"orders\"\n}\n```\n\nExpected Error Response:\n```json\n{\n  \"type\": \"error\",\n  \"error\": {\n    \"code\": \"BAD_REQUEST\",\n    \"message\": \"Invalid message format: ...\"\n  },\n  \"ts\": \"2025-01-30T10:00:00Z\"\n}\n```\n\nPydantic validation will reject this before it reaches the handler."
+          },
+          "response": []
+        }
+      ],
+      "description": "Test error handling with invalid WebSocket messages."
+    },
+    {
+      "name": "6. Complete Workflow Test",
+      "item": [
+        {
+          "name": "Step 1 - Initial Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has required fields\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('uptime_sec');",
+                  "    pm.expect(jsonData).to.have.property('topics');",
+                  "    pm.expect(jsonData).to.have.property('subscribers');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Verify server is running and healthy."
+          },
+          "response": []
+        },
+        {
+          "name": "Step 2 - Create Test Topic",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Topic created successfully\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql(\"created\");",
+                  "    pm.expect(jsonData.topic).to.eql(\"test-workflow\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"test-workflow\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/topics",
+              "host": ["{{baseUrl}}"],
+              "path": ["topics"]
+            },
+            "description": "Create a topic for workflow testing."
+          },
+          "response": []
+        },
+        {
+          "name": "Step 3 - Verify Topic Exists",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Topic appears in list\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    var topicNames = jsonData.topics.map(t => t.name);",
+                  "    pm.expect(topicNames).to.include(\"test-workflow\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/topics",
+              "host": ["{{baseUrl}}"],
+              "path": ["topics"]
+            },
+            "description": "Verify the topic appears in the list."
+          },
+          "response": []
+        },
+        {
+          "name": "Step 4 - Check Stats (No Messages Yet)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Topic has 0 messages\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.topics['test-workflow']) {",
+                  "        pm.expect(jsonData.topics['test-workflow'].messages).to.eql(0);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["stats"]
+            },
+            "description": "Check initial stats before any messages."
+          },
+          "response": []
+        },
+        {
+          "name": "Step 5 - WebSocket Instructions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            },
+            "description": "Now use a WebSocket client to:\n\n1. Subscribe to 'test-workflow':\n```json\n{\n  \"type\": \"subscribe\",\n  \"topic\": \"test-workflow\",\n  \"client_id\": \"workflow-subscriber\"\n}\n```\n\n2. Publish a message:\n```json\n{\n  \"type\": \"publish\",\n  \"topic\": \"test-workflow\",\n  \"message\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"payload\": {\"test\": \"workflow complete\"}\n  }\n}\n```\n\n3. Verify you receive the event message\n\n4. Continue to Step 6"
+          },
+          "response": []
+        },
+        {
+          "name": "Step 6 - Check Stats After Messages",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["stats"]
+            },
+            "description": "Check stats after publishing messages via WebSocket."
+          },
+          "response": []
+        },
+        {
+          "name": "Step 7 - Delete Test Topic",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Topic deleted successfully\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql(\"deleted\");",
+                  "    pm.expect(jsonData.topic).to.eql(\"test-workflow\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/topics/test-workflow",
+              "host": ["{{baseUrl}}"],
+              "path": ["topics", "test-workflow"]
+            },
+            "description": "Clean up by deleting the test topic."
+          },
+          "response": []
+        },
+        {
+          "name": "Step 8 - Final Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Final health check to verify system is still running."
+          },
+          "response": []
+        }
+      ],
+      "description": "Complete workflow testing all REST endpoints in sequence."
+    }
+  ]
+}
