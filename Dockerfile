@@ -21,6 +21,7 @@ COPY --from=builder /root/.local /root/.local
 
 # Copy application code
 COPY models.py .
+COPY config.py .
 COPY pubsub_manager.py .
 COPY main.py .
 

@@ -70,9 +70,8 @@ async def lifespan(app: FastAPI):
             await asyncio.gather(*shutdown_tasks, return_exceptions=True)
             logger.info(f"Notified {len(shutdown_tasks)} subscribers of shutdown")
 
-        # Step 2: Best-effort flush of message queues (wait max 2 seconds)
-        logger.info("Attempting to flush message queues...")
-        await asyncio.sleep(2)  # Give background tasks time to drain queues
+        # Step 2: Execute comprehensive graceful shutdown
+        await pubsub_manager.initiate_shutdown()
 
         # Step 3: Log final statistics
         logger.info(f"Final stats - Topics: {len(pubsub_manager.topics)}, "
@@ -196,6 +195,11 @@ async def handle_subscribe(websocket: WebSocket, msg: ClientMessage):
         websocket: WebSocket connection
         msg: Client message containing subscription details
     """
+    # Check if system is shutting down
+    if pubsub_manager.is_shutting_down():
+        await send_error(websocket, ErrorCode.INTERNAL, "Server is shutting down, not accepting new subscriptions", msg.request_id)
+        return
+    
     # Validate required fields
     if not msg.topic:
         await send_error(websocket, ErrorCode.BAD_REQUEST, "topic is required", msg.request_id)
@@ -272,6 +276,11 @@ async def handle_publish(websocket: WebSocket, msg: ClientMessage):
         websocket: WebSocket connection
         msg: Client message containing message to publish
     """
+    # Check if system is shutting down
+    if pubsub_manager.is_shutting_down():
+        await send_error(websocket, ErrorCode.INTERNAL, "Server is shutting down, not accepting new messages", msg.request_id)
+        return
+    
     # Validate required fields
     if not msg.topic:
         await send_error(websocket, ErrorCode.BAD_REQUEST, "topic is required", msg.request_id)
@@ -320,11 +329,22 @@ async def websocket_endpoint(websocket: WebSocket):
     Args:
         websocket: WebSocket connection
     """
+    # Check if system is shutting down before accepting connection
+    if pubsub_manager.is_shutting_down():
+        await websocket.close(code=1001, reason="Server is shutting down")
+        logger.warning("Rejected WebSocket connection - server shutting down")
+        return
+    
     await websocket.accept()
     logger.info("WebSocket connection established")
 
     try:
         while True:
+            # Check if shutdown initiated during connection
+            if pubsub_manager.is_shutting_down():
+                await send_error(websocket, ErrorCode.INTERNAL, "Server is shutting down")
+                break
+            
             # Receive message from client
             data = await websocket.receive_json()
 
@@ -373,7 +393,15 @@ async def create_topic(request: CreateTopicRequest):
 
     Raises:
         HTTPException: 409 if topic already exists
+        HTTPException: 503 if server is shutting down
     """
+    # Check if system is shutting down
+    if pubsub_manager.is_shutting_down():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Server is shutting down, not accepting new operations"
+        )
+    
     success = await pubsub_manager.create_topic(request.name)
 
     if not success:

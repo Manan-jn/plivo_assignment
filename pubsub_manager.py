@@ -212,6 +212,8 @@ class PubSubManager:
         self.lock = asyncio.Lock()
         # System start time for uptime calculation
         self.start_time = time.time()
+        # Shutdown flag - when True, reject new operations
+        self.shutting_down = False
         logger.info("PubSubManager initialized")
 
     async def create_topic(self, name: str) -> bool:
@@ -391,3 +393,96 @@ class PubSubManager:
     def topic_exists(self, name: str) -> bool:
         """Check if a topic exists"""
         return name in self.topics
+    
+    def is_shutting_down(self) -> bool:
+        """Check if system is shutting down"""
+        return self.shutting_down
+    
+    async def initiate_shutdown(self):
+        """
+        Initiate graceful shutdown sequence.
+        
+        Steps:
+        1. Set shutdown flag to reject new operations
+        2. Deactivate all subscribers
+        3. Drain message queues (best-effort)
+        4. Close WebSocket connections
+        """
+        logger.info("Initiating graceful shutdown...")
+        self.shutting_down = True
+        
+        # Collect all subscribers and websockets
+        all_subscribers = []
+        all_websockets = []
+        
+        async with self.lock:
+            for topic in self.topics.values():
+                for subscriber in topic.subscribers.values():
+                    all_subscribers.append(subscriber)
+                    all_websockets.append(subscriber.websocket)
+                    # Deactivate subscriber to stop message sender tasks
+                    subscriber.deactivate()
+        
+        logger.info(f"Deactivated {len(all_subscribers)} subscribers")
+        
+        # Best-effort: Try to drain remaining messages from queues
+        logger.info("Draining message queues (best-effort)...")
+        drain_tasks = []
+        
+        for subscriber in all_subscribers:
+            # Try to send remaining messages (with timeout)
+            async def drain_subscriber_queue(sub):
+                try:
+                    # Try to drain for max 2 seconds
+                    timeout = 2.0
+                    start = asyncio.get_event_loop().time()
+                    
+                    while not sub.message_queue.empty():
+                        if asyncio.get_event_loop().time() - start > timeout:
+                            break
+                        
+                        try:
+                            msg_data = sub.message_queue.get_nowait()
+                            event_msg = ServerMessage(
+                                type="event",
+                                topic=msg_data['topic'],
+                                message=msg_data['message'],
+                                ts=msg_data['ts']
+                            )
+                            await sub.websocket.send_json(event_msg.model_dump(exclude_none=True))
+                        except asyncio.QueueEmpty:
+                            break
+                        except Exception as e:
+                            logger.debug(f"Error draining queue: {e}")
+                            break
+                except Exception as e:
+                    logger.debug(f"Error in drain task: {e}")
+            
+            drain_tasks.append(drain_subscriber_queue(subscriber))
+        
+        # Wait for drain attempts (with overall timeout)
+        if drain_tasks:
+            try:
+                await asyncio.wait_for(
+                    asyncio.gather(*drain_tasks, return_exceptions=True),
+                    timeout=3.0
+                )
+                logger.info("Queue draining completed")
+            except asyncio.TimeoutError:
+                logger.warning("Queue draining timed out, proceeding with shutdown")
+        
+        # Close all WebSocket connections
+        logger.info("Closing WebSocket connections...")
+        close_tasks = []
+        
+        for websocket in all_websockets:
+            try:
+                close_tasks.append(websocket.close(code=1001, reason="Server shutting down"))
+            except Exception as e:
+                logger.debug(f"Error closing websocket: {e}")
+        
+        if close_tasks:
+            await asyncio.gather(*close_tasks, return_exceptions=True)
+        
+        logger.info(f"Closed {len(close_tasks)} WebSocket connections")
+        logger.info("Graceful shutdown complete")
